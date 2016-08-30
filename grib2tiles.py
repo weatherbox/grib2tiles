@@ -40,15 +40,20 @@ def msm_to_tiles(file):
 
         if level == 'surface' and (element == 'UGRD' or element == 'VGRD'):
             print ft, level, element
-            to_tile(data, bin_RED, ni=481, nj=505, split=2)
+            directory = '/'.join(['tiles', str(ft), level, element])
+            to_tile(directory, data, bin_RED, ni=481, nj=505, split=2)
             
 
 
 
-def to_tile(data, bin_RED, ni, nj, split=1):
+def to_tile(dir, data, bin_RED, ni, nj, split=1):
     nsplit = 2 ** split
     tni = (ni - 1) / nsplit + 1
     tnj = (nj - 1) / nsplit + 1
+
+    directory = dir + '/' + str(split)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     for ty in range(0, nsplit):
         for tx in range(0, nsplit):
@@ -71,6 +76,9 @@ def to_tile(data, bin_RED, ni, nj, split=1):
 
             bin_tile_data = bitstruct.pack(format_row * tnj, *tile_data)
 
+            f = open(directory + '/%d_%d.bin' % (tx, ty), 'w')
+            f.write(bin_RED + bin_tile_data)
+            f.close()
 
 if __name__ == '__main__':
     file = sys.argv[1]
