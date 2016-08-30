@@ -53,22 +53,24 @@ def to_tile(data, bin_RED, ni, nj, split=1):
     for ty in range(0, nsplit):
         for tx in range(0, nsplit):
             tile_data = []
+            lx1 = (tni - 1) * tx
+            lx2 = (tni - 1) * (tx + 1) + 1
+            length = (lx2 - lx1) * 12
+            format_row = 'r' + str(length)
+
             for y in range(0, tnj):
                 base_y = ni * (ty + y)
-                lx1 = base_y + (tni - 1) * tx
-                lx2 = base_y + (tni - 1) * (tx + 1) + 1
-                bx1 = int(math.floor(lx1 * 12 / 8.))
-                bx2 = int(math.ceil(lx2 * 12 / 8.))
+                bx1 = int(math.floor((base_y + lx1) * 12 / 8.))
+                bx2 = int(math.ceil((base_y + lx2) * 12 / 8.))
                 d = data[bx1:bx2]
-                length = lx2 - lx1
 
                 if lx1 % 8 == 4:
-                    tile_data.extend(list(bitstruct.unpack('p4' + 'u12' * length, d)))
+                    tile_data.extend(list(bitstruct.unpack('p4' + format_row, d)))
                 else:
-                    tile_data.extend(list(bitstruct.unpack('u12' * length, d)))
+                    tile_data.extend(list(bitstruct.unpack(format_row, d)))
 
-            bin_tile_data = bitstruct.pack('u12' * tni * tnj, *tile_data)
-            print len(bin_tile_data)
+            bin_tile_data = bitstruct.pack(format_row * tnj, *tile_data)
+
 
 if __name__ == '__main__':
     file = sys.argv[1]
