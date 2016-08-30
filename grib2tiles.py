@@ -69,7 +69,7 @@ def to_tile(dir, data, bin_RED, ni, nj, split=1):
                 bx2 = int(math.ceil((base_y + lx2) * 12 / 8.))
                 d = data[bx1:bx2]
 
-                if lx1 % 8 == 4:
+                if ((base_y + lx1) * 12) % 8 == 4:
                     tile_data.extend(list(bitstruct.unpack('p4' + format_row, d)))
                 else:
                     tile_data.extend(list(bitstruct.unpack(format_row, d)))
