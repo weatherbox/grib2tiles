@@ -3,7 +3,7 @@ import os
 from msm import MSM
 import datetime
 import numpy as np
-
+import bitstruct
 
 def msm_to_tiles(file):
     msm = MSM(file)
