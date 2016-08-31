@@ -13,7 +13,7 @@ def msm_to_tiles(file):
     sec1 = msm.parse_section1()
     sec3, grid = msm.parse_section3()
 
-    date = datetime.datetime(
+    ref_time = datetime.datetime(
         sec1['year'][0],        
         sec1['month'][0],        
         sec1['day'][0],
@@ -21,7 +21,7 @@ def msm_to_tiles(file):
         sec1['minute'][0],
         sec1['second'][0]
     )
-    print date
+    ref_time_str = ref_time.strftime('%Y%m%d%H%M')
 
     while not msm.is_end_section():
         sec4, pdt = msm.parse_section4()
@@ -30,6 +30,8 @@ def msm_to_tiles(file):
         sec7, data = msm.parse_section7()
 
         ft = pdt['forecast_time'][0]
+        forecast_time = ref_time + datetime.timedelta(hours=int(ft))
+        forecast_time_str = forecast_time.strftime('%Y%m%d%H%M')
         level = msm.level(
             pdt['first_fixed_surface_type'],
             pdt['first_fixed_surface_scale_factor'],
@@ -38,8 +40,8 @@ def msm_to_tiles(file):
             pdt['parameter_category'],
             pdt['parameter_number'])
             
-        print ft, level, element
-        directory = '/'.join(['tiles', str(ft), level, element])
+        print ref_time_str, forecast_time_str, level, element
+        directory = '/'.join(['tiles', ref_time_str, forecast_time_str, level, element])
 
         if level == 'surface' and (element == 'UGRD' or element == 'VGRD'):
             to_tile(directory, data, bin_RED, ni=481, nj=505, level=2)
