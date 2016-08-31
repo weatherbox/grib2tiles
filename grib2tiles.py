@@ -37,26 +37,28 @@ def msm_to_tiles(file):
         element = msm.parameter(
             pdt['parameter_category'],
             pdt['parameter_number'])
+            
+        print ft, level, element
+        directory = '/'.join(['tiles', str(ft), level, element])
 
         if level == 'surface' and (element == 'UGRD' or element == 'VGRD'):
-            print ft, level, element
-            directory = '/'.join(['tiles', str(ft), level, element])
-            to_tile(directory, data, bin_RED, ni=481, nj=505, split=2)
+            to_tile(directory, data, bin_RED, ni=481, nj=505, level=2)
             
+        elif element == 'UGRD' or element == 'VGRD': # upper
+            to_tile(directory, data, bin_RED, ni=241, nj=253, level=1)
 
 
+def to_tile(dir, data, bin_RED, ni, nj, level=1):
+    ntile = 2 ** level
+    tni = (ni - 1) / ntile + 1
+    tnj = (nj - 1) / ntile + 1
 
-def to_tile(dir, data, bin_RED, ni, nj, split=1):
-    nsplit = 2 ** split
-    tni = (ni - 1) / nsplit + 1
-    tnj = (nj - 1) / nsplit + 1
-
-    directory = dir + '/' + str(split)
+    directory = dir + '/' + str(level)
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    for ty in range(0, nsplit):
-        for tx in range(0, nsplit):
+    for ty in range(0, ntile):
+        for tx in range(0, ntile):
             tile_data = []
             lx1 = (tni - 1) * tx
             lx2 = (tni - 1) * (tx + 1) + 1
