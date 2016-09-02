@@ -1,0 +1,9 @@
+
+{
+  "name": "grib2tiles",
+  "description": "",
+  "memory": 128,
+  "timeout": 5,
+  "role": "arn:aws:iam::502205496096:role/grib2tiles_lambda_function",
+  "environment": {}
+}
