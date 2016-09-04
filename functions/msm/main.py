@@ -1,11 +1,14 @@
 import sys
 import os
+import glob
 from msm import MSM
 import datetime
 import grib2tiles
+import boto3
 
 def msm_to_tiles(file):
     msm = MSM(file)
+    dirs = []
     
     msm.parse_section0()
     sec1 = msm.parse_section1()
@@ -37,8 +40,9 @@ def msm_to_tiles(file):
         element = msm.parameter(
             pdt['parameter_category'],
             pdt['parameter_number'])
-            
+
         directory = '/'.join(['tiles', ref_time_str, forecast_time_str, level, element])
+        dirs.append(directory)
 
         if level == 'surface' and (element == 'UGRD' or element == 'VGRD'):
             grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=2)
@@ -47,7 +51,21 @@ def msm_to_tiles(file):
         elif element == 'UGRD' or element == 'VGRD': # upper
             grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=1)
 
+    return dirs
+
+
 if __name__ == '__main__':
-    file = sys.argv[1]
-    msm_to_tiles(file)
+    grib = sys.argv[1]
+    dirs = msm_to_tiles(grib)
+    
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket('msm-tiles')
+
+    for d in dirs:
+        files = glob.glob(d + '/*/*')
+        for file in files:
+            print file
+            bucket.Object(file).upload_file(file)
+
+
 
