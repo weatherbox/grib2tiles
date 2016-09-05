@@ -10,6 +10,8 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+s3_client = boto3.client('s3')
+
 def msm_to_tiles(file):
     msm = MSM(file)
     dirs = []
@@ -46,7 +48,6 @@ def msm_to_tiles(file):
             pdt['parameter_number'])
 
         directory = '/'.join(['tiles', ref_time_str, forecast_time_str, level, element])
-        dirs.append(directory)
 
         if level == 'surface' and (element == 'UGRD' or element == 'VGRD'):
             grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=2)
@@ -80,6 +81,14 @@ def main(grib):
     logger.info("done uploading %d files", uploaded)
 
 
+def handler(event, context):
+    for record in event['Records']:
+        bucket = record['s3']['bucket']['name']
+        key = record['s3']['object']['key']
+        file = '/tmp/' + key
+
+        s3_client.download_file('msm-data', key, file)
+        main(file)
 
 if __name__ == '__main__':
     grib = sys.argv[1]
