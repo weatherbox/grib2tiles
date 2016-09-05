@@ -5,6 +5,10 @@ from msm import MSM
 import datetime
 import grib2tiles
 import boto3
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def msm_to_tiles(file):
     msm = MSM(file)
@@ -50,22 +54,34 @@ def msm_to_tiles(file):
             
         elif element == 'UGRD' or element == 'VGRD': # upper
             grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=1)
+        else:
+            continue
+
+        logger.info(directory)
+        dirs.append(directory)
 
     return dirs
-
-
-if __name__ == '__main__':
-    grib = sys.argv[1]
+ 
+def main(grib):
+    logging.info("start processing: " + grib)
     dirs = msm_to_tiles(grib)
     
+    logger.info("start uploading to s3://msm-tiles")
     s3 = boto3.resource('s3')
     bucket = s3.Bucket('msm-tiles')
+    uploaded = 0
 
     for d in dirs:
         files = glob.glob(d + '/*/*')
         for file in files:
-            print file
             bucket.Object(file).upload_file(file)
+            uploaded += 1
+
+    logger.info("done uploading %d files", uploaded)
 
 
+
+if __name__ == '__main__':
+    grib = sys.argv[1]
+    main(grib)
 

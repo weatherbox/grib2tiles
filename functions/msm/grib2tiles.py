@@ -9,7 +9,6 @@ def to_tile(dir, data, bin_RED, ni, nj, level=1, thinout=0):
     directory = dir + '/' + str(level)
     if not os.path.exists(directory):
         os.makedirs(directory)
-    print directory
 
     if thinout == 0:
         tni = (ni - 1) / ntile + 1
