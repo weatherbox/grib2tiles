@@ -1,11 +1,13 @@
 import sys
 import os
 import glob
-from msm import MSM
 import datetime
 import grib2tiles
 import boto3
 import logging
+
+sys.path.append('lib')
+from msm import MSM
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -47,7 +49,7 @@ def msm_to_tiles(file):
             pdt['parameter_category'],
             pdt['parameter_number'])
 
-        directory = '/'.join(['tiles', ref_time_str, forecast_time_str, level, element])
+        directory = '/tmp/' + '/'.join(['tiles', ref_time_str, forecast_time_str, level, element])
 
         if level == 'surface' and (element == 'UGRD' or element == 'VGRD'):
             grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=2)
