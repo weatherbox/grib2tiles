@@ -2,11 +2,10 @@ import sys
 import os
 import glob
 import datetime
-import grib2tiles
 import boto3
 import logging
 
-sys.path.append('lib')
+import grib2tiles
 from msm import MSM
 
 logger = logging.getLogger()
