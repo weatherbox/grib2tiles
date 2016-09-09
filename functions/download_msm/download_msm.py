@@ -1,6 +1,14 @@
 import sys
 import os
 
+import boto3
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+s3_client = boto3.client('s3')
+
 source = "http://database.rish.kyoto-u.ac.jp/arch/jmadata/data/gpv/original/"
 
 def download(date):
@@ -13,6 +21,10 @@ def download(date):
         filename = "Z__C_RJTD_" + date + "00_MSM_GPV_Rjp_" + filetype + "_grib2.bin"
         url = source + "/".join([date[0:4], date[4:6], date[6:8], filename])
         os.system("wget -P msm " + url)
+
+
+def handler(event, context):
+
 
 
 if __name__ == '__main__':
