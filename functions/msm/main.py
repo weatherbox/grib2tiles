@@ -86,7 +86,7 @@ def handler(event, context):
     for record in event['Records']:
         bucket = record['s3']['bucket']['name']
         key = record['s3']['object']['key']
-        file = '/tmp/' + key
+        file = '/tmp/' + key.replace('/', '-')
 
         s3_client.download_file('msm-data', key, file)
         main(file)
