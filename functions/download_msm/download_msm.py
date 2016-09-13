@@ -23,20 +23,21 @@ def download(date):
     for filetype in filetypes:
         filename = "Z__C_RJTD_" + date + "00_MSM_GPV_Rjp_" + filetype + "_grib2.bin"
         url = source + "/".join([date[0:4], date[4:6], date[6:8], filename])
-        download_file(url, '/tmp/' + filename, date)
+        download_file(url, filename, date)
 
 
-def download_file(url, file, date):
+def download_file(url, filename, date):
     logging.info('start downlaoding: ' + url)
     response = urllib2.urlopen(url)
     content = response.read()
 
+    file = '/tmp/' + filename
     f = open(file, 'w')
     f.write(content)
     f.close()
     logging.info('saved to ' + file)
 
-    key = '/'.join([date, file])
+    key = '/'.join([date, filename])
     logging.info('start uploading: ' + key)
     s3_client.upload_file(file, 'msm-data', key)
     logging.info('done uploading')
@@ -44,7 +45,7 @@ def download_file(url, file, date):
 
 def handler(event, context):
     now = datetime.datetime.utcnow()
-    dh = now.hour % 3 + 3 + 3
+    dh = now.hour % 3 + 3
     d = now - datetime.timedelta(hours=dh)
     date = d.strftime('%Y%m%d%H00')
     logging.info('start processing: ' + date)
