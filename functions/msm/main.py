@@ -76,7 +76,8 @@ def main(grib):
     for d in dirs:
         files = glob.glob(d + '/*/*')
         for file in files:
-            bucket.Object(file).upload_file(file)
+            key = file[5:]
+            bucket.Object(key).upload_file(file)
             uploaded += 1
 
     logger.info("done uploading %d files", uploaded)
