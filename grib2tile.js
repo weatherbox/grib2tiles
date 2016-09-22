@@ -6,14 +6,33 @@
  */
 
 
-function Grib2tile(){
-	this.tx = 121;
-	this.ty = 127;
+function Grib2tile(url, tx, ty){
+	this.url = url;
+	this.tx = tx;
+	this.ty = ty;
+
+	return this;
 }
 
-Grib2tile.prototype.parse = function(){
-	var dv = new DataView(this._buffer);
+Grib2tile.prototype.get = function(callback){
+	var req = new XMLHttpRequest();
+	req.open("GET", this.url, true);
+	req.responseType = "arraybuffer";
+
+	req.onload = function(){
+		this._arraybuffer = req.response;
+		this.parse(callback);
+	};
+
+	req.send(null);
+	return;
+};
+
+Grib2tile.prototype.parse = function(callback){
+	var dv = new DataView(this._arraybuffer);
 	this._endian = false; // big endian
+
+	// read meta data
 	this.R = dv.getFloat32(0, this._endian);
 	this.E = this.neg16(dv.getUint16(4, this._endian));
 	this.D = this.neg16(dv.getUint16(6, this._endian)));
@@ -47,7 +66,7 @@ Grib2tile.prototype.parse = function(){
 		this.data[2*(i + 1)] = this.unpackSimple(x1 << 4 + x2 >> 4);
 	}
 
-	return;
+	return callback();
 };
 
 
