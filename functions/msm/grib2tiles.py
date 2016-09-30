@@ -23,7 +23,7 @@ def to_tile(dir, data, bin_RED, ni, nj, level=1, thinout=0):
                 format_row = 'r' + str(length)
 
                 for y in range(0, tnj):
-                    base_y = ni * (ty + y)
+                    base_y = ni * ((tnj - 1) * ty + y)
                     bx1 = int(math.floor((base_y + lx1) * 12 / 8.))
                     bx2 = int(math.ceil((base_y + lx2) * 12 / 8.))
                     d = data[bx1:bx2]
