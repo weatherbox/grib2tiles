@@ -62,7 +62,7 @@ Grib2tile.prototype.parse = function(callback){
 		x1 = dv.getUint8(offset);
 		x2 = dv.getUint8(offset + 1);
 
-		this.data[2*(i + 1)] = this.unpackSimple(x1 << 4 + x2 >> 4);
+		this.data[2*i] = this.unpackSimple(x1 << 4 | x2 >> 4);
 	}
 
 	return callback();
