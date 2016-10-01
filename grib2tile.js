@@ -15,6 +15,7 @@ function Grib2tile(url, tx, ty){
 Grib2tile.prototype.get = function(callback){
 	var self = this;
 	var req = new XMLHttpRequest();
+	this._rea = req;
 	req.open("GET", this.url, true);
 	req.responseType = "arraybuffer";
 
