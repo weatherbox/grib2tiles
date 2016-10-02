@@ -4,6 +4,7 @@ import glob
 import datetime
 import boto3
 import logging
+import json
 
 import grib2tiles
 from msm import MSM
@@ -38,8 +39,8 @@ def msm_to_tiles(file):
         sec7, data = msm.parse_section7()
 
         ft = pdt['forecast_time'][0]
-        forecast_time = ref_time + datetime.timedelta(hours=int(ft))
-        forecast_time_str = forecast_time.strftime('%Y%m%d%H%M')
+        valid_time = ref_time + datetime.timedelta(hours=int(ft))
+        valid_time_str = valid_time.strftime('%Y%m%d%H%M')
         level = msm.level(
             pdt['first_fixed_surface_type'],
             pdt['first_fixed_surface_scale_factor'],
@@ -48,7 +49,7 @@ def msm_to_tiles(file):
             pdt['parameter_category'],
             pdt['parameter_number'])
 
-        directory = '/tmp/' + '/'.join(['tiles', ref_time_str, forecast_time_str, level, element])
+        directory = '/tmp/' + '/'.join(['tiles', ref_time_str, valid_time_str, level, element])
 
         if level == 'surface' and (element == 'UGRD' or element == 'VGRD'):
             grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=2)
