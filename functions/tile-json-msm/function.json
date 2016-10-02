@@ -1,0 +1,5 @@
+{
+    "memory": 256,
+	"timeout": 30,
+	"handler": "tile_json.handler"
+}
