@@ -4,6 +4,8 @@ import glob
 import datetime
 import boto3
 import logging
+import json
+import re
 
 import grib2tiles
 from msm import MSM
@@ -16,7 +18,20 @@ s3_client = boto3.client('s3')
 def msm_to_tiles(file):
     msm = MSM(file)
     dirs = []
-    
+    tile_json = {}
+    file_type = re.findall(r"L[^_]+_FH[^_]+", file)[0]
+    if re.match(r"Lsurf", file_type):
+        tile_json['surface'] = {
+            'elements': {},
+            'valid_time': {}
+        }
+    else:
+        tile_json['upperair'] = {
+            'elements': {},
+            'levels': {},
+            'valid_time': {}
+        }
+
     msm.parse_section0()
     sec1 = msm.parse_section1()
     sec3, grid = msm.parse_section3()
@@ -30,6 +45,7 @@ def msm_to_tiles(file):
         sec1['second'][0]
     )
     ref_time_str = ref_time.strftime('%Y%m%d%H%M')
+    tile_json['ref_time'] = ref_time_str
 
     while not msm.is_end_section():
         sec4, pdt = msm.parse_section4()
@@ -38,8 +54,8 @@ def msm_to_tiles(file):
         sec7, data = msm.parse_section7()
 
         ft = pdt['forecast_time'][0]
-        forecast_time = ref_time + datetime.timedelta(hours=int(ft))
-        forecast_time_str = forecast_time.strftime('%Y%m%d%H%M')
+        valid_time = ref_time + datetime.timedelta(hours=int(ft))
+        valid_time_str = valid_time.strftime('%Y%m%d%H%M')
         level = msm.level(
             pdt['first_fixed_surface_type'],
             pdt['first_fixed_surface_scale_factor'],
@@ -48,25 +64,33 @@ def msm_to_tiles(file):
             pdt['parameter_category'],
             pdt['parameter_number'])
 
-        directory = '/tmp/' + '/'.join(['tiles', ref_time_str, forecast_time_str, level, element])
+        directory = '/tmp/' + '/'.join(['tiles', ref_time_str, valid_time_str, level, element])
 
         if level == 'surface' and (element == 'UGRD' or element == 'VGRD'):
+            tile_json['surface']['valid_time'][valid_time_str] = 1
+            tile_json['surface']['elements']['wind'] = 1
+
             grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=2)
             grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=1, thinout=1)
             
         elif element == 'UGRD' or element == 'VGRD': # upper
+            tile_json['upperair']['valid_time'][valid_time_str] = 1
+            tile_json['upperair']['elements']['wind'] = 1 
+            tile_json['upperair']['levels'][int(level)] = 1
+
             grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=1)
+
         else:
             continue
 
         logger.info(directory)
         dirs.append(directory)
 
-    return dirs
+    return dirs, file_type, tile_json
  
 def main(grib):
     logging.info("start processing: " + grib)
-    dirs = msm_to_tiles(grib)
+    dirs, file_type, tile_json = msm_to_tiles(grib)
     
     logger.info("start uploading to s3://msm-tiles")
     s3 = boto3.resource('s3')
@@ -82,6 +106,31 @@ def main(grib):
 
     logger.info("done uploading %d files", uploaded)
 
+    # tile.json
+    tile_json_file = create_tile_json(tile_json)
+    key = '/'.join(['tiles', tile_json['ref_time'], 'tile-' + file_type + '.json'])
+    bucket.Object(key).upload_file(tile_json_file)
+    logger.info("uploaded tile.json")
+
+
+def create_tile_json(tile_json):
+    if 'surface' in tile_json:
+        tile_json['surface']['valid_time'] = tile_json['surface']['valid_time'].keys()
+        tile_json['surface']['valid_time'].sort() 
+        tile_json['surface']['elements'] = tile_json['surface']['elements'].keys()
+
+    elif 'upperair' in tile_json:
+        tile_json['upperair']['valid_time'] = tile_json['upperair']['valid_time'].keys()
+        tile_json['upperair']['elements'] = tile_json['upperair']['elements'].keys()
+        tile_json['upperair']['levels'] = tile_json['upperair']['levels'].keys()
+        tile_json['upperair']['levels'].sort(reverse=True)
+
+    tile_json_file = '/tmp/tile.json'
+    file = open(tile_json_file, 'w')
+    file.write(json.dumps(tile_json))
+    file.close()
+
+    return tile_json_file
 
 def handler(event, context):
     for record in event['Records']:
