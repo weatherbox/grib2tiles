@@ -18,7 +18,8 @@ def main(ref_time):
         keys = [content['Key'] for content in response['Contents']]
         if len(keys) == 6:
             tile_json_file = create_tile_json(ref_time, keys)
-            s3_client.upload_file(tile_json_file, 'msm-tiles', 'tiles/tile.json')
+            s3_client.upload_file(tile_json_file, 'msm-tiles', 'tiles/tile.json',
+                ExtraArgs={'ContentType': "application/json"})
             logger.info("done updating tile.json")
 
         else:
