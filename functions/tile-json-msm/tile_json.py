@@ -16,7 +16,7 @@ def main(ref_time):
 
     if 'Contents' in response:
         keys = [content['Key'] for content in response['Contents']]
-        if len(keys) > 0:
+        if len(keys) == 6:
             tile_json_file = create_tile_json(ref_time, keys)
             s3_client.upload_file(tile_json_file, 'msm-tiles', 'tiles/tile.json')
             logger.info("done updating tile.json")
@@ -65,7 +65,6 @@ def create_tile_json(ref_time, keys):
     tile_json['upperair']['elements']   = sorted(list(set(tile_json['upperair']['elements'])))
     tile_json['upperair']['levels']     = sorted(list(set(tile_json['upperair']['levels'])), reverse=True)
 
-    print tile_json
     tile_json_file = '/tmp/tile.json'
     file = open(tile_json_file, 'w')
     file.write(json.dumps(tile_json))
