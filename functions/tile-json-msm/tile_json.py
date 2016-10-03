@@ -30,7 +30,7 @@ def create_tile_json(ref_time, keys):
     host = 'http://msm-tiles.s3-website-ap-northeast-1.amazonaws.com'
     tile_json = {
         'ref_time': ref_time,
-        'url': host + '/tiles/' + ref_time + '/{valid_time}/{e}/{z}/{x}_{y}.bin',
+        'url': host + '/tiles/' + ref_time + '/{valid_time}/{level}/{e}/{z}/{x}_{y}.bin',
         'surface': {
             'elements': [],
             'valid_time': []
