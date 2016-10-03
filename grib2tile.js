@@ -72,7 +72,7 @@ Grib2tile.prototype.parse = function(callback){
 
 // first bit indicates negative number
 Grib2tile.prototype.neg16 = function(x){
-	if (x & 0x80 > 0) x = (x & 0x7f) * -1;
+	if ((x & 0x8000) > 0) return (x & 0x7fff) * -1;
 	return x;
 };
 
