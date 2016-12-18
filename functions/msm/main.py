@@ -70,15 +70,15 @@ def msm_to_tiles(file):
             tile_json['surface']['valid_time'][valid_time_str] = 1
             tile_json['surface']['elements']['wind'] = 1
 
-            grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=2)
-            grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=1, thinout=1)
+            grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=1)
+            grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=0, thinout=1)
             
         elif element == 'UGRD' or element == 'VGRD': # upper
             tile_json['upperair']['valid_time'][valid_time_str] = 1
             tile_json['upperair']['elements']['wind'] = 1 
             tile_json['upperair']['levels'][int(level)] = 1
 
-            grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=1)
+            grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=0)
 
         else:
             continue
