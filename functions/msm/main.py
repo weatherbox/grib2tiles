@@ -70,22 +70,19 @@ def msm_to_tiles(file):
 
         directory = '/tmp/' + '/'.join(['tiles', ref_time_str, valid_time_str, level, element])
 
-        if level == 'surface' and (element == 'UGRD' or element == 'VGRD'):
+        if level == 'surface':
             tile_json['surface']['valid_time'][valid_time_str] = 1
             tile_json['surface']['elements']['wind'] = 1
 
             files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=1))
             files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=0, thinout=1))
-            
-        elif element == 'UGRD' or element == 'VGRD': # upper
+
+        else:
             tile_json['upperair']['valid_time'][valid_time_str] = 1
             tile_json['upperair']['elements']['wind'] = 1 
             tile_json['upperair']['levels'][int(level)] = 1
 
             files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=0))
-
-        else:
-            continue
 
         logger.info(directory)
 
@@ -132,6 +129,23 @@ def create_tile_json(tile_json):
 
     return tile_json_file
 
+
+def main(grib):
+    logging.info("start processing: " + grib)
+    files, file_type, tile_json = msm_to_tiles(grib)
+
+    logger.info("start uploading to s3://msm-tiles %d files", len(files))
+    upload_files(files)
+    logger.info("done uploading files")
+
+    # tile.json
+    tile_json_file = create_tile_json(tile_json)
+    key = '/'.join(['tiles', tile_json['ref_time'], 'tile-' + file_type + '.json'])
+    s3_client.upload_file(tile_json_file, 'msm-tiles', key)
+    logger.info("uploaded tile.json")
+
+
+# called by aws lambda
 def handler(event, context):
     for record in event['Records']:
         bucket = record['s3']['bucket']['name']
@@ -140,6 +154,7 @@ def handler(event, context):
 
         s3_client.download_file('msm-data', key, file)
         main(file)
+
 
 if __name__ == '__main__':
     grib = sys.argv[1]
