@@ -12,14 +12,19 @@ def to_tile(dir, data, bin_RED, ni, nj, level=1, thinout=0):
     if level == 0 and thinout == 0:
         return to_tile_raw(directory, data, bin_RED)
 
-    elif thinout == 0 and ni % 2 == 1:
-        return to_tile_base_odd(directory, data, bin_RED, ni, nj, level)
-
     elif thinout == 0:
-        return to_tile_base(directory, data, bin_RED, ni, nj, level)
+        if ni % 2 == 1:
+            return to_tile_base_odd(directory, data, bin_RED, ni, nj, level)
+
+        else:
+            return to_tile_base(directory, data, bin_RED, ni, nj, level)
 
     elif thinout > 0:
-        return to_tile_thinout(directory, data, bin_RED, ni, nj, level, thinout)
+        if ni % 2 == 1:
+            return to_tile_thinout_odd(directory, data, bin_RED, ni, nj, level, thinout)
+
+        else:
+            return to_tile_thinout(directory, data, bin_RED, ni, nj, level, thinout)
 
 
 def to_tile_base(directory, data, bin_RED, ni, nj, level):
@@ -73,7 +78,6 @@ def to_tile_base_odd(directory, data, bin_RED, ni, nj, level):
 
     for ty in range(0, ntile):
         for tx in range(0, ntile):
-            tile_data = []
             lx1 = (tni - 1) * tx
             lx2 = (tni - 1) * (tx + 1) + 1
 
@@ -141,6 +145,59 @@ def to_tile_thinout(directory, data, bin_RED, ni, nj, level, thinout):
             file = directory + '/%d_%d.bin' % (tx, ty)
             f = open(file, 'w')
             f.write(bin_RED + bin_tile_data)
+            f.close()
+            files.append(file)
+
+    return files
+
+
+def to_tile_thinout_odd(directory, data, bin_RED, ni, nj, level, thinout):
+    files = []
+
+    ntile = 2 ** level
+    thinout_level = 2 ** thinout
+    tni = (ni - 1) / thinout_level / ntile + 1
+    tnj = (nj - 1) / thinout_level / ntile + 1
+
+    byte_data = bytearray(data)
+
+    for ty in range(0, ntile):
+        for tx in range(0, ntile):
+            lx = (tni - 1) * thinout_level * tx
+
+            bin_tile_data = bytearray()
+            i = 0
+            prev_byte1 = 0
+            prev_byte2 = 0
+
+            for y in range(0, tnj):
+                base_y = ni * thinout_level * ((tnj - 1) * ty + y)
+
+                for x in range(0, tni):
+                    t = base_y + lx + thinout_level * x
+                    dt = int(math.floor((t) * 12 / 8.))
+
+                    if i % 2 == 0:
+                        prev_byte1 = byte_data[dt]
+                        prev_byte2 = byte_data[dt+1]
+
+                    else:
+                        byte3 = byte_data[dt]
+                        byte4 = byte_data[dt+1]
+
+                        bin_tile_data.append(prev_byte1)
+                        bin_tile_data.append((prev_byte2 & 0b11110000) | (byte3 >> 4))
+                        bin_tile_data.append(((byte3 & 0b00001111) << 4) | (byte4  >> 4))
+
+                    i += 1
+
+            if (tnj % 2 == 1):
+                bin_tile_data.append(prev_byte1)
+                bin_tile_data.append(prev_byte2)
+
+            file = directory + '/%d_%d.bin' % (tx, ty)
+            f = open(file, 'w')
+            f.write(bin_RED + bytes(bin_tile_data))
             f.close()
             files.append(file)
 
