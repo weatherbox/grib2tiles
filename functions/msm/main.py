@@ -6,6 +6,8 @@ import boto3
 import logging
 import json
 import re
+import Queue
+from threading import Thread
 
 import grib2tiles
 from msm import MSM
@@ -15,9 +17,11 @@ logger.setLevel(logging.INFO)
 
 s3_client = boto3.client('s3')
 
+queue = Queue.Queue()
+
 def msm_to_tiles(file):
     msm = MSM(file)
-    dirs = []
+    files = []
     tile_json = {}
     file_type = re.findall(r"L[^_]+_FH[^_]+", file)[0]
     if re.match(r"Lsurf", file_type):
@@ -66,51 +70,44 @@ def msm_to_tiles(file):
 
         directory = '/tmp/' + '/'.join(['tiles', ref_time_str, valid_time_str, level, element])
 
-        if level == 'surface' and (element == 'UGRD' or element == 'VGRD'):
+        if level == 'surface':
             tile_json['surface']['valid_time'][valid_time_str] = 1
             tile_json['surface']['elements']['wind'] = 1
 
-            grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=1)
-            grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=0, thinout=1)
-            
-        elif element == 'UGRD' or element == 'VGRD': # upper
+            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=1))
+            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=0, thinout=1))
+
+        else:
             tile_json['upperair']['valid_time'][valid_time_str] = 1
             tile_json['upperair']['elements']['wind'] = 1 
             tile_json['upperair']['levels'][int(level)] = 1
 
-            grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=0)
-
-        else:
-            continue
+            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=0))
 
         logger.info(directory)
-        dirs.append(directory)
 
-    return dirs, file_type, tile_json
+    return files, file_type, tile_json
  
-def main(grib):
-    logging.info("start processing: " + grib)
-    dirs, file_type, tile_json = msm_to_tiles(grib)
-    
-    logger.info("start uploading to s3://msm-tiles")
-    s3 = boto3.resource('s3')
-    bucket = s3.Bucket('msm-tiles')
-    uploaded = 0
 
-    for d in dirs:
-        files = glob.glob(d + '/*/*')
-        for file in files:
-            key = file[5:]
-            bucket.Object(key).upload_file(file)
-            uploaded += 1
+def upload_files(files):
+    for file in files:
+        queue.put(file)
 
-    logger.info("done uploading %d files", uploaded)
+    for i in range(10):
+        thread = Thread(target=upload_worker)
+        thread.start()
 
-    # tile.json
-    tile_json_file = create_tile_json(tile_json)
-    key = '/'.join(['tiles', tile_json['ref_time'], 'tile-' + file_type + '.json'])
-    bucket.Object(key).upload_file(tile_json_file)
-    logger.info("uploaded tile.json")
+    return queue.join()
+
+
+def upload_worker():
+    while not queue.empty():
+        file = queue.get()
+
+        key = file[5:]
+        s3_client.upload_file(file, 'msm-tiles', key)
+
+        queue.task_done()
 
 
 def create_tile_json(tile_json):
@@ -132,6 +129,23 @@ def create_tile_json(tile_json):
 
     return tile_json_file
 
+
+def main(grib):
+    logging.info("start processing: " + grib)
+    files, file_type, tile_json = msm_to_tiles(grib)
+
+    logger.info("start uploading to s3://msm-tiles %d files", len(files))
+    upload_files(files)
+    logger.info("done uploading files")
+
+    # tile.json
+    tile_json_file = create_tile_json(tile_json)
+    key = '/'.join(['tiles', tile_json['ref_time'], 'tile-' + file_type + '.json'])
+    s3_client.upload_file(tile_json_file, 'msm-tiles', key)
+    logger.info("uploaded tile.json")
+
+
+# called by aws lambda
 def handler(event, context):
     for record in event['Records']:
         bucket = record['s3']['bucket']['name']
@@ -140,6 +154,7 @@ def handler(event, context):
 
         s3_client.download_file('msm-data', key, file)
         main(file)
+
 
 if __name__ == '__main__':
     grib = sys.argv[1]
