@@ -2,6 +2,7 @@ import os
 import numpy as np
 import bitstruct
 import math
+import struct
 
 def to_tile(dir, data, bin_RED, ni, nj, level=1, thinout=0):
     directory = dir + '/' + str(level)
@@ -10,6 +11,9 @@ def to_tile(dir, data, bin_RED, ni, nj, level=1, thinout=0):
 
     if level == 0 and thinout == 0:
         return to_tile_raw(directory, data, bin_RED)
+
+    elif thinout == 0 and ni % 2 == 1:
+        return to_tile_base_odd(directory, data, bin_RED, ni, nj, level)
 
     elif thinout == 0:
         return to_tile_base(directory, data, bin_RED, ni, nj, level)
@@ -45,6 +49,56 @@ def to_tile_base(directory, data, bin_RED, ni, nj, level):
                     tile_data.extend(list(bitstruct.unpack(format_row, d)))
 
             bin_tile_data = bitstruct.pack(format_row * tnj, *tile_data)
+
+            file = directory + '/%d_%d.bin' % (tx, ty)
+            f = open(file, 'w')
+            f.write(bin_RED + bin_tile_data)
+            f.close()
+            files.append(file)
+
+    return files 
+
+
+def to_tile_base_odd(directory, data, bin_RED, ni, nj, level):
+    """
+    assuming that ni is odd number,
+    there is no need to shift binary bytes
+    """
+
+    files = []
+
+    ntile = 2 ** level
+    tni = (ni - 1) / ntile + 1
+    tnj = (nj - 1) / ntile + 1
+
+    for ty in range(0, ntile):
+        for tx in range(0, ntile):
+            tile_data = []
+            lx1 = (tni - 1) * tx
+            lx2 = (tni - 1) * (tx + 1) + 1
+
+            bin_tile_data = ''
+            bin_data_even = ''
+            bin_data_even_last = ''
+
+            for y in range(0, tnj):
+                base_y = ni * ((tnj - 1) * ty + y)
+                bx1 = int(math.floor((base_y + lx1) * 12 / 8.))
+                bx2 = int(math.ceil((base_y + lx2) * 12 / 8.))
+
+                if ((base_y + lx1) * 12) % 8 == 4:
+                    left = struct.unpack('B', bin_data_even_last)[0] & 0b11110000
+                    right = struct.unpack('B', data[bx1])[0] & 0b00001111
+                    bin_data_glue = struct.pack('B', left | right)
+
+                    bin_tile_data += bin_data_even + bin_data_glue + data[bx1+1:bx2]
+
+                else:
+                    bin_data_even = data[bx1:bx2-1]
+                    bin_data_even_last = data[bx2-1]
+
+            if (tnj % 2 == 1):
+                bin_tile_data += bin_data_even + bin_data_even_last
 
             file = directory + '/%d_%d.bin' % (tx, ty)
             f = open(file, 'w')
