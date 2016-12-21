@@ -91,20 +91,6 @@ def msm_to_tiles(file):
 
     return files, file_type, tile_json
  
-def main(grib):
-    logging.info("start processing: " + grib)
-    files, file_type, tile_json = msm_to_tiles(grib)
-    
-    logger.info("start uploading to s3://msm-tiles %d files", len(files))
-    upload_files(files)
-    logger.info("done uploading files")
-
-    # tile.json
-    tile_json_file = create_tile_json(tile_json)
-    key = '/'.join(['tiles', tile_json['ref_time'], 'tile-' + file_type + '.json'])
-    s3_client.upload_file(tile_json_file, 'msm-tiles', key)
-    logger.info("uploaded tile.json")
-
 
 def upload_files(files):
     for file in files:
