@@ -17,7 +17,7 @@ s3_client = boto3.client('s3')
 
 def msm_to_tiles(file):
     msm = MSM(file)
-    dirs = []
+    files = []
     tile_json = {}
     file_type = re.findall(r"L[^_]+_FH[^_]+", file)[0]
     if re.match(r"Lsurf", file_type):
@@ -70,41 +70,36 @@ def msm_to_tiles(file):
             tile_json['surface']['valid_time'][valid_time_str] = 1
             tile_json['surface']['elements']['wind'] = 1
 
-            grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=1)
-            grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=0, thinout=1)
+            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=1))
+            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=0, thinout=1))
             
         elif element == 'UGRD' or element == 'VGRD': # upper
             tile_json['upperair']['valid_time'][valid_time_str] = 1
             tile_json['upperair']['elements']['wind'] = 1 
             tile_json['upperair']['levels'][int(level)] = 1
 
-            grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=0)
+            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=0))
 
         else:
             continue
 
         logger.info(directory)
-        dirs.append(directory)
 
-    return dirs, file_type, tile_json
+    return files, file_type, tile_json
  
 def main(grib):
     logging.info("start processing: " + grib)
-    dirs, file_type, tile_json = msm_to_tiles(grib)
+    files, file_type, tile_json = msm_to_tiles(grib)
     
-    logger.info("start uploading to s3://msm-tiles")
+    logger.info("start uploading to s3://msm-tiles %d files", len(files))
     s3 = boto3.resource('s3')
     bucket = s3.Bucket('msm-tiles')
-    uploaded = 0
 
-    for d in dirs:
-        files = glob.glob(d + '/*/*')
-        for file in files:
-            key = file[5:]
-            bucket.Object(key).upload_file(file)
-            uploaded += 1
+    for file in files:
+       key = file[5:]
+       bucket.Object(key).upload_file(file)
 
-    logger.info("done uploading %d files", uploaded)
+    logger.info("done uploading files")
 
     # tile.json
     tile_json_file = create_tile_json(tile_json)

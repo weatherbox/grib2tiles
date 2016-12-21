@@ -5,6 +5,7 @@ import math
 
 def to_tile(dir, data, bin_RED, ni, nj, level=1, thinout=0):
     ntile = 2 ** level
+    files = []
 
     directory = dir + '/' + str(level)
     if not os.path.exists(directory):
@@ -35,9 +36,11 @@ def to_tile(dir, data, bin_RED, ni, nj, level=1, thinout=0):
 
                 bin_tile_data = bitstruct.pack(format_row * tnj, *tile_data)
 
-                f = open(directory + '/%d_%d.bin' % (tx, ty), 'w')
+                file = directory + '/%d_%d.bin' % (tx, ty)
+                f = open(file, 'w')
                 f.write(bin_RED + bin_tile_data)
                 f.close()
+                files.append(file)
 
     elif thinout > 0:
         thinout_level = 2 ** thinout
@@ -65,9 +68,11 @@ def to_tile(dir, data, bin_RED, ni, nj, level=1, thinout=0):
 
                 bin_tile_data = bitstruct.pack('u12' * tni * tnj, *tile_data)
 
-                f = open(directory + '/%d_%d.bin' % (tx, ty), 'w')
+                file = directory + '/%d_%d.bin' % (tx, ty)
+                f = open(file, 'w')
                 f.write(bin_RED + bin_tile_data)
                 f.close()
+                files.append(file)
 
-
+    return files
 
