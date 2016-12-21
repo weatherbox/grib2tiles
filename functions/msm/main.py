@@ -6,6 +6,8 @@ import boto3
 import logging
 import json
 import re
+import Queue
+from threading import Thread
 
 import grib2tiles
 from msm import MSM
@@ -14,6 +16,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 s3_client = boto3.client('s3')
+
+queue = Queue.Queue()
 
 def msm_to_tiles(file):
     msm = MSM(file)
@@ -92,20 +96,35 @@ def main(grib):
     files, file_type, tile_json = msm_to_tiles(grib)
     
     logger.info("start uploading to s3://msm-tiles %d files", len(files))
-    s3 = boto3.resource('s3')
-    bucket = s3.Bucket('msm-tiles')
-
-    for file in files:
-       key = file[5:]
-       bucket.Object(key).upload_file(file)
-
+    upload_files(files)
     logger.info("done uploading files")
 
     # tile.json
     tile_json_file = create_tile_json(tile_json)
     key = '/'.join(['tiles', tile_json['ref_time'], 'tile-' + file_type + '.json'])
-    bucket.Object(key).upload_file(tile_json_file)
+    s3_client.upload_file(tile_json_file, 'msm-tiles', key)
     logger.info("uploaded tile.json")
+
+
+def upload_files(files):
+    for file in files:
+        queue.put(file)
+
+    for i in range(10):
+        thread = Thread(target=upload_worker)
+        thread.start()
+
+    return queue.join()
+
+
+def upload_worker():
+    while not queue.empty():
+        file = queue.get()
+
+        key = file[5:]
+        s3_client.upload_file(file, 'msm-tiles', key)
+
+        queue.task_done()
 
 
 def create_tile_json(tile_json):
