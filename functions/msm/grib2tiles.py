@@ -8,7 +8,10 @@ def to_tile(dir, data, bin_RED, ni, nj, level=1, thinout=0):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    if thinout == 0:
+    if level == 0 and thinout == 0:
+        return to_tile_raw(directory, data, bin_RED)
+
+    elif thinout == 0:
         return to_tile_base(directory, data, bin_RED, ni, nj, level)
 
     elif thinout > 0:
@@ -88,4 +91,13 @@ def to_tile_thinout(directory, data, bin_RED, ni, nj, level, thinout):
             files.append(file)
 
     return files
+
+
+def to_tile_raw(directory, data, bin_RED):
+    file = directory + '/0_0.bin'
+    f = open(file, 'w')
+    f.write(bin_RED + data)
+    f.close()
+
+    return [ file ]
 
