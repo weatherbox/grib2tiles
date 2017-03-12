@@ -26,7 +26,7 @@ class MSM:
 
         while not self.is_end_section():
             sec4, pdt = self.parse_section4()
-            sec5, drt = self.parse_section5()
+            sec5, drt = self.parse_section5(False)
             sec6 = self.parse_section6() # not used
             sec7, data = self.parse_section7()
 
