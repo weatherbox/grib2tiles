@@ -27,14 +27,15 @@ def to_tile_bitmap_thinout(directory, data, bin_RED, ni, nj, level, thinout, bit
 
     for ty in range(0, ntile):
         for tx in range(0, ntile):
-    #for ty in range(0, 1):
-    #    for tx in range(0, 1):
             bin_tile_data = bytearray()
             i = 0
             prev_byte1 = 0
             prev_byte2 = 0
             now_byte1 = 0b00000000
             now_byte2 = 0b00000000
+
+            prev_grid_point = 0
+            prev_nonzero_count = 0
 
             for y in range(0, tnj):
                 base_y = ni * thinout_level * ((tnj - 1) * ty + y)
@@ -47,7 +48,10 @@ def to_tile_bitmap_thinout(directory, data, bin_RED, ni, nj, level, thinout, bit
                         now_byte2 = 0b11111111
 
                     else:
-                        bin_point = np.count_nonzero(bitmap_np[:grid_point])
+                        nonzero_count = np.count_nonzero(bitmap_np[prev_grid_point:grid_point])
+                        bin_point = prev_nonzero_count + nonzero_count
+                        prev_grid_point = grid_point
+                        prev_nonzero_count = bin_point
 
                         bx = int(math.floor((bin_point) * 12 / 8.))
                         now_byte1 = byte_data[bx]
