@@ -13,17 +13,16 @@ class LFM(MSM):
         ])
         sec6 = np.fromfile(self.fileptr, dtype=section6_dtype, count=1)
 
-        if sec6['bitmap_indicator'] == 254:
-            return sec6
+        bitmap = None
 
-        elif sec6['bitmap_indicator'] == 0:
+        if sec6['bitmap_indicator'] == 0:
             bitmap = self.fileptr.read(sec6['length'] - 6)
 
-            if return_bitmap:
-                return sec6, bitmap
+        if return_bitmap:
+            return sec6, bitmap
 
-            else:
-                return sec6
+        else:
+            return sec6
 
 
 if __name__ == '__main__':
