@@ -51,11 +51,13 @@ def lfm_to_tiles(file):
         directory = '' + '/'.join(['tiles', ref_time_str, valid_time_str, level, element])
 
         if level == 'surface':
-            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=1))
-            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=0, thinout=1))
+            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=1201, nj=1261, level=2, bitmap=bitmap))
+            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=1201, nj=1261, level=1, thinout=1, bitmap=bitmap))
+            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=1201, nj=1261, level=0, thinout=2, bitmap=bitmap))
 
         else:
-            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=0))
+            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=601, nj=631, level=1, bitmap=bitmap))
+            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=601, nj=631, level=0, thinout=1, bitmap=bitmap))
 
         logger.info(directory)
 
@@ -66,7 +68,6 @@ def lfm_to_tiles(file):
 def main(grib):
     logging.info("start processing: " + grib)
     files = lfm_to_tiles(grib)
-
 
 
 if __name__ == '__main__':
