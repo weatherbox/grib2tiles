@@ -31,7 +31,7 @@ def to_tile_bitmap_thinout(directory, data, bin_RED, ni, nj, level, thinout, bit
                 base_y = ni * thinout_level * ((tnj - 1) * ty + y)
 
                 for x in range(0, tni):
-                    grid_point = base_y + x ** thinout_level
+                    grid_point = base_y + (x + (tni - 1) * tx) * thinout_level
 
                     if bitmap[grid_point] == 0:
                         tile_data.append(no_data)
