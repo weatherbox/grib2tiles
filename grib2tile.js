@@ -6,10 +6,11 @@
  */
 
 
-function Grib2tile(url, tx, ty){
+function Grib2tile(url, tx, ty, bitmap){
 	this.url = url;
 	this.tx = tx;
 	this.ty = ty;
+	if (bitmap) this._bitmap = true;
 }
 
 Grib2tile.prototype.get = function(callback){
@@ -64,6 +65,16 @@ Grib2tile.prototype.parse = function(callback){
 		x2 = dv.getUint8(offset + 1);
 
 		this.data[2*i] = this.unpackSimple(x1 << 4 | x2 >> 4);
+
+	}else{
+		x1 = dv.getUint8(offset);
+		x2 = dv.getUint8(offset + 1);
+		x3 = dv.getUint8(offset + 2);
+
+		this.data[2*i    ] = this.unpackSimple(x1 << 4 | x2 >> 4);
+		this.data[2*i + 1] = this.unpackSimple((x2 & 0x0f) << 8 | x3);
+
+
 	}
 
 	return callback();
@@ -78,6 +89,7 @@ Grib2tile.prototype.neg16 = function(x){
 
 // unpack simple packing
 Grib2tile.prototype.unpackSimple = function(x){
+	if (this._bitmap && x == 0x0fff) return NaN;
 	return (this.R + x * this._2E) / this._10D;
 };
 
