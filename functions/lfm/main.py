@@ -27,12 +27,16 @@ def lfm_to_tiles(file):
         sec1['second'][0]
     )
     ref_time_str = ref_time.strftime('%Y%m%d%H%M')
+    bitmap = ''
 
     while not lfm.is_end_section():
         sec4, pdt = lfm.parse_section4()
         sec5, drt, bin_RED = lfm.parse_section5(True)
-        sec6, bitmap = lfm.parse_section6(return_bitmap=True)
+        sec6, bitmap_iter = lfm.parse_section6(return_bitmap=True)
         sec7, data = lfm.parse_section7()
+
+        if sec6['bitmap_indicator'] == 0:
+            bitmap = bitmap_iter
 
         level = lfm.level(
             pdt['first_fixed_surface_type'],
