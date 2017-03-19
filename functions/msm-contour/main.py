@@ -49,7 +49,7 @@ def msm_to_tiles(file):
         #directory = '/tmp/' + '/'.join(['tiles', ref_time_str, valid_time_str, level, element])
         directory = '/'.join(['countour', ref_time_str, valid_time_str, level, element])
 
-        if level == 'surface' and element == 'PRES':
+        if level == 'surface' and element == 'PRMSL':
             print MSM.decode(data, drt, grid['ni'], grid['nj'])
 
 

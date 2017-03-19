@@ -318,14 +318,14 @@ class MSM:
         size = nx * ny
         data = np.empty(size, dtype=np.float32)
 
-        R = drt['R']
+        R = float(drt['R'])
         E = float(MSM.neg16(drt['E']))
         D = float(MSM.neg16(drt['D']))
-        nbits = drt['nbits']
+        nbits = int(drt['nbits'])
 
         for n in xrange(0, size):
-            nd = int(n * nbits / 8)
-            value = rawdata[nd] << 8 & rawdata[nd+1]
+            nd = int(n * nbits / 8.)
+            value = (rawdata[nd] << 8) | rawdata[nd+1]
 
             if n % 2 == 0:
                 value = value >> 4
