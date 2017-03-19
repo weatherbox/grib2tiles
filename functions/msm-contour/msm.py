@@ -8,6 +8,7 @@ GRIB2 documentation: http://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc.shtml
 
 import sys
 import numpy as np
+import math
 
 
 class MSM:
@@ -188,7 +189,7 @@ class MSM:
             return np.fromfile(self.fileptr, dtype=np.dtype(product_definition_template_4_8), count=1)
 
 
-    def parse_section5(self, bin_RED_flag):
+    def parse_section5(self, bin_RED_flag=False):
         section5_dtype = np.dtype([
             ('length', '>u4'),
             ('section_number', 'u1'),
@@ -201,7 +202,7 @@ class MSM:
             ('R', '>f4'),
             ('E', '>u2'),
             ('D', '>u2'),
-            ('num_bits', 'u1'),
+            ('nbits', 'u1'),
             ('original_field_type', 'u1')
         ])
         
@@ -300,6 +301,45 @@ class MSM:
 
         else:
             return
+
+
+    @staticmethod
+    def decode(rawdata, drt, nx, ny):
+        rawdata = np.frombuffer(rawdata, dtype=np.uint8)
+        size = nx * ny
+        data = np.empty(size, dtype=np.float32)
+
+        R = drt['R']
+        E = float(MSM.neg16(drt['E']))
+        D = float(MSM.neg16(drt['D']))
+        nbits = drt['nbits']
+
+        for n in xrange(0, size):
+            nd = int(n * nbits / 8)
+            value = rawdata[nd] << 8 & rawdata[nd+1]
+
+            if n % 2 == 0:
+                value = value >> 4
+            else:
+                value = value & 0b0000111111111111
+
+            data[n] = MSM.unpack_simple(value, R, E, D)
+
+        return data
+
+
+    @staticmethod
+    def unpack_simple(x, R, E, D):
+        return (R + float(x) * math.pow(2, E)) / math.pow(10, D)
+
+
+    # first bit indicates negative number
+    @staticmethod
+    def neg16(x):
+        if x & 0b1000000000000000 > 0:
+            x = (x & 0b0111111111111111) * -1
+        return x
+
 
 
 if __name__ == '__main__':

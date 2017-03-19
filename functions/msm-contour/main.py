@@ -1,15 +1,12 @@
 import sys
 import os
-import glob
 import datetime
 import boto3
 import logging
 import json
-import re
 import Queue
 from threading import Thread
 
-import grib2tiles
 from msm import MSM
 
 logger = logging.getLogger()
@@ -22,19 +19,6 @@ queue = Queue.Queue()
 def msm_to_tiles(file):
     msm = MSM(file)
     files = []
-    tile_json = {}
-    file_type = re.findall(r"L[^_]+_FH[^_]+", file)[0]
-    if re.match(r"Lsurf", file_type):
-        tile_json['surface'] = {
-            'elements': {},
-            'valid_time': {}
-        }
-    else:
-        tile_json['upperair'] = {
-            'elements': {},
-            'levels': {},
-            'valid_time': {}
-        }
 
     msm.parse_section0()
     sec1 = msm.parse_section1()
@@ -49,11 +33,10 @@ def msm_to_tiles(file):
         sec1['second'][0]
     )
     ref_time_str = ref_time.strftime('%Y%m%d%H%M')
-    tile_json['ref_time'] = ref_time_str
 
     while not msm.is_end_section():
         sec4, pdt = msm.parse_section4()
-        sec5, drt, bin_RED = msm.parse_section5(True)
+        sec5, drt = msm.parse_section5()
         msm.parse_section6() # not used
         sec7, data = msm.parse_section7()
 
@@ -68,25 +51,16 @@ def msm_to_tiles(file):
             pdt['parameter_category'],
             pdt['parameter_number'])
 
-        directory = '/tmp/' + '/'.join(['tiles', ref_time_str, valid_time_str, level, element])
+        #directory = '/tmp/' + '/'.join(['tiles', ref_time_str, valid_time_str, level, element])
+        directory = '/'.join(['countour', ref_time_str, valid_time_str, level, element])
 
-        if level == 'surface':
-            tile_json['surface']['valid_time'][valid_time_str] = 1
-            tile_json['surface']['elements']['wind'] = 1
+        if level == 'surface' and element == 'PRES':
+            print MSM.decode(data, drt, grid['ni'], grid['nj'])
 
-            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=1))
-            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=481, nj=505, level=0, thinout=1))
-
-        else:
-            tile_json['upperair']['valid_time'][valid_time_str] = 1
-            tile_json['upperair']['elements']['wind'] = 1 
-            tile_json['upperair']['levels'][int(level)] = 1
-
-            files.extend(grib2tiles.to_tile(directory, data, bin_RED, ni=241, nj=253, level=0))
 
         logger.info(directory)
 
-    return files, file_type, tile_json
+    return files
  
 
 def upload_files(files):
@@ -110,39 +84,15 @@ def upload_worker():
         queue.task_done()
 
 
-def create_tile_json(tile_json):
-    if 'surface' in tile_json:
-        tile_json['surface']['valid_time'] = tile_json['surface']['valid_time'].keys()
-        tile_json['surface']['valid_time'].sort() 
-        tile_json['surface']['elements'] = tile_json['surface']['elements'].keys()
-
-    elif 'upperair' in tile_json:
-        tile_json['upperair']['valid_time'] = tile_json['upperair']['valid_time'].keys()
-        tile_json['upperair']['elements'] = tile_json['upperair']['elements'].keys()
-        tile_json['upperair']['levels'] = tile_json['upperair']['levels'].keys()
-        tile_json['upperair']['levels'].sort(reverse=True)
-
-    tile_json_file = '/tmp/tile.json'
-    file = open(tile_json_file, 'w')
-    file.write(json.dumps(tile_json))
-    file.close()
-
-    return tile_json_file
-
 
 def main(grib):
     logging.info("start processing: " + grib)
-    files, file_type, tile_json = msm_to_tiles(grib)
+    files = msm_to_tiles(grib)
 
     logger.info("start uploading to s3://msm-tiles %d files", len(files))
-    upload_files(files)
+    #upload_files(files)
     logger.info("done uploading files")
 
-    # tile.json
-    tile_json_file = create_tile_json(tile_json)
-    key = '/'.join(['tiles', tile_json['ref_time'], 'tile-' + file_type + '.json'])
-    s3_client.upload_file(tile_json_file, 'msm-tiles', key)
-    logger.info("uploaded tile.json")
 
 
 # called by aws lambda
