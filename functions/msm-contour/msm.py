@@ -252,7 +252,11 @@ class MSM:
             self.fileptr.seek(-4, 1) # back to previous point
             return False
 
-    def parameter(self, category, number):
+    @staticmethod
+    def element(pdt):
+        category = pdt['parameter_category'][0]
+        number = pdt['parameter_number'][0]
+
         params = {
             0: {
                 'category': 'Temperture',
@@ -283,10 +287,15 @@ class MSM:
                 5: 'HCDC'
             }
         }
-        return params[category[0]][number[0]]
+        return params[category][number]
 
 
-    def level(self, type, scale_factor, scale_value):
+    @staticmethod
+    def level(pdt):
+        type = pdt['first_fixed_surface_type']
+        scale_factor = pdt['first_fixed_surface_scale_factor']
+        scale_value = pdt['first_fixed_surface_scale_value']
+
         if type == 1:
             return 'surface' # Ground or Water Surface
 

@@ -43,13 +43,8 @@ def msm_to_tiles(file):
         ft = pdt['forecast_time'][0]
         valid_time = ref_time + datetime.timedelta(hours=int(ft))
         valid_time_str = valid_time.strftime('%Y%m%d%H%M')
-        level = msm.level(
-            pdt['first_fixed_surface_type'],
-            pdt['first_fixed_surface_scale_factor'],
-            pdt['first_fixed_surface_scale_value'])
-        element = msm.parameter(
-            pdt['parameter_category'],
-            pdt['parameter_number'])
+        level = MSM.level(pdt)
+        element = MSM.element(pdt)
 
         #directory = '/tmp/' + '/'.join(['tiles', ref_time_str, valid_time_str, level, element])
         directory = '/'.join(['countour', ref_time_str, valid_time_str, level, element])
