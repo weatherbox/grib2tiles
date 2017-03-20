@@ -8,6 +8,7 @@ import Queue
 from threading import Thread
 
 from msm import MSM
+import contour
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -50,7 +51,9 @@ def msm_to_tiles(file):
         directory = '/'.join(['countour', ref_time_str, valid_time_str, level, element])
 
         if level == 'surface' and element == 'PRMSL':
-            print MSM.decode(data, drt, grid['ni'], grid['nj'])
+            grib = MSM.decode(data, drt, grid['ni'][0], grid['nj'][0])
+            print contour.togeojson(grib)
+            return
 
 
         logger.info(directory)

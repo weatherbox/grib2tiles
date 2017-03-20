@@ -334,7 +334,8 @@ class MSM:
 
             data[n] = MSM.unpack_simple(value, R, E, D)
 
-        return data
+        print nx, ny, data
+        return data.reshape((ny, nx))
 
 
     @staticmethod
