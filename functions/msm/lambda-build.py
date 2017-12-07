@@ -4,7 +4,7 @@ import datetime
 
 
 if __name__ == '__main__':
-    date = datetime.datetime.now().strftime('%Y%d%m-%H%M%S')
+    date = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     package = 'lambda-grib2tiles-msm-' + date + '.zip'
     shutil.copy('lambda-numpy.zip', package)
 

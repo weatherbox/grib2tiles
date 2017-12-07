@@ -68,6 +68,8 @@ def msm_to_tiles(file):
             pdt['parameter_category'],
             pdt['parameter_number'])
 
+        if not level or not element: continue
+
         directory = '/tmp/' + '/'.join(['tiles', ref_time_str, valid_time_str, level, element])
 
         if level == 'surface':
