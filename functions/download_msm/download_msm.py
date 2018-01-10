@@ -28,8 +28,12 @@ def download(date):
 
 def download_file(url, filename, date):
     logging.info('start downlaoding: ' + url)
-    response = urllib2.urlopen(url)
-    content = response.read()
+    try:
+        response = urllib2.urlopen(url)
+        content = response.read()
+    except urllib2.HTTPError as e:
+        print("[Error] " + str(e.code) + ": " + e.reason + " " + url)
+        return
 
     file = '/tmp/' + filename
     f = open(file, 'w')
