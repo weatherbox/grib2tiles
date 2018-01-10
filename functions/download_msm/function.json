@@ -1,0 +1,7 @@
+{
+  "name": "download-msm",
+  "runtime": "python2.7",
+  "handler": "download_msm.handler",
+  "memory": 256,
+  "timeout": 300
+}
